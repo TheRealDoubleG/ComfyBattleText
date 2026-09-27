@@ -1,7 +1,7 @@
 ComfyBattleText = ComfyBattleText or {}
 local A = ComfyBattleText
 
-A.messagePool = A.messagePool or {}
+A.messagePool = A.messagePool or {incoming={}, outgoing={}, notifications={}}
 A.activeMessages = A.activeMessages or {}
 A.nameplatePool = A.nameplatePool or {}
 A.activeNameplateMessages = A.activeNameplateMessages or {}
@@ -196,10 +196,12 @@ function A:ResetAreaPositions()
     self:RefreshAreaFrames()
 end
 
-function A:GetMessageFont()
-    local fs=table.remove(self.messagePool)
+function A:GetMessageFont(areaKey)
+    self.messagePool[areaKey]=self.messagePool[areaKey] or {}
+    local pool=self.messagePool[areaKey]
+    local fs=table.remove(pool)
     if fs then fs:Show(); fs:SetAlpha(1); return fs end
-    local parent=self.areaFrames and self.areaFrames.incoming or UIParent
+    local parent=self.areaFrames and self.areaFrames[areaKey] or UIParent
     fs=parent:CreateFontString(nil,"OVERLAY")
     fs:SetJustifyH("CENTER")
     fs:SetShadowOffset(1,-1)
@@ -211,7 +213,8 @@ function A:ReleaseMessage(entry)
     if not entry or not entry.fs then return end
     entry.fs:Hide()
     entry.fs:ClearAllPoints()
-    self.messagePool[#self.messagePool+1]=entry.fs
+    self.messagePool[entry.areaKey]=self.messagePool[entry.areaKey] or {}
+    self.messagePool[entry.areaKey][#self.messagePool[entry.areaKey]+1]=entry.fs
 end
 
 function A:CountAreaMessages(areaKey)
@@ -244,8 +247,7 @@ function A:PushText(areaKey,text,color,size,critical)
     if not area then return end
 
     self:TrimArea(areaKey)
-    local fs=self:GetMessageFont()
-    fs:SetParent(area)
+    local fs=self:GetMessageFont(areaKey)
     local fontSize=Clamp(size or route.fontSize or 20,10,42)
     if critical then fontSize=fontSize*Clamp(self.db.battle.appearance.critScale,1,2) end
     local font=STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF"
