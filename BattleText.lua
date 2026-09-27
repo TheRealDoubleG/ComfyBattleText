@@ -6,6 +6,7 @@ A.activeMessages = A.activeMessages or {}
 A.nameplatePool = A.nameplatePool or {}
 A.activeNameplateMessages = A.activeNameplateMessages or {}
 A.nameplateByGUID = A.nameplateByGUID or {}
+A.nameplateUnitGUID = A.nameplateUnitGUID or {}
 
 local DEFAULT_AREAS = {
     incoming = {x=-285,y=0,width=250,height=330},
@@ -366,16 +367,26 @@ function A:RegisterNameplate(unit)
     if not unit or type(UnitGUID)~="function" then return end
     local ok,guid=pcall(UnitGUID,unit)
     if not ok or not guid then return end
+    local old=self.nameplateUnitGUID[unit]
+    if old and old~=guid then self.nameplateByGUID[old]=nil end
     if C_NamePlate and type(C_NamePlate.GetNamePlateForUnit)=="function" then
         local good,plate=pcall(C_NamePlate.GetNamePlateForUnit,unit)
-        if good and plate then self.nameplateByGUID[guid]=plate end
+        if good and plate then
+            self.nameplateUnitGUID[unit]=guid
+            self.nameplateByGUID[guid]=plate
+        end
     end
 end
 
 function A:UnregisterNameplate(unit)
-    if not unit or type(UnitGUID)~="function" then return end
-    local ok,guid=pcall(UnitGUID,unit)
-    if ok and guid then self.nameplateByGUID[guid]=nil end
+    if not unit then return end
+    local guid=self.nameplateUnitGUID[unit]
+    if not guid and type(UnitGUID)=="function" then
+        local ok,value=pcall(UnitGUID,unit)
+        if ok then guid=value end
+    end
+    if guid then self.nameplateByGUID[guid]=nil end
+    self.nameplateUnitGUID[unit]=nil
 end
 
 function A:RefreshGUIDs()
