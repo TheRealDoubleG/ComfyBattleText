@@ -3,7 +3,7 @@
 ## Notes: Customizable scrolling combat text for damage, healing, combat events and notifications on WoW Forever.
 ## Notes-deDE: Anpassbarer scrollender Kampftext für Schaden, Heilung, Kampfereignisse und Hinweise in WoW Forever.
 ## Author: TheRealDoubleG
-## Version: 0.2
+## Version: 0.3
 ## SavedVariables: ComfyBattleTextDB
 ## X-ComfySuite: true
 ## X-ComfyUI: 2
