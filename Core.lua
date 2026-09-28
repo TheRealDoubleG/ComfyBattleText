@@ -4,7 +4,7 @@ ComfyBattleText = ComfyBattleText or {}
 local A = ComfyBattleText
 
 A.name = ADDON_NAME or "ComfyBattleText"
-A.version = "0.1"
+A.version = "0.2"
 A.buildDate = "28.09.2026"
 A.status = "Beta"
 A.gameVersion = "WoW Forever 1.60.1"
@@ -53,6 +53,15 @@ local defaults = {
             misses = true,
             fontSize = 18,
             lifetime = 1.15,
+        },
+
+        filters = {
+            incomingDamageMin = 0,
+            incomingHealingMin = 0,
+            outgoingDamageMin = 0,
+            outgoingHealingMin = 0,
+            hidePeriodicDamage = false,
+            hidePeriodicHealing = false,
         },
 
         appearance = {
