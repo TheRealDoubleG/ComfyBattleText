@@ -4,7 +4,7 @@ ComfyBattleText = ComfyBattleText or {}
 local A = ComfyBattleText
 
 A.name = ADDON_NAME or "ComfyBattleText"
-A.version = "0.4"
+A.version = "0.5"
 A.buildDate = "28.09.2026"
 A.status = "Beta"
 A.gameVersion = "WoW Forever 1.60.1"
