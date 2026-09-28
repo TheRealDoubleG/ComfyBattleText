@@ -417,6 +417,119 @@ function A:MissPayload(data,subevent)
     if subevent=="SPELL_MISSED" or subevent=="RANGE_MISSED" then return tostring(data[15] or "MISS"),SafeNumber(data[12]),data[13] end
 end
 
+local function TrimText(v)
+    return tostring(v or ""):gsub("^%s+",""):gsub("%s+$","")
+end
+
+function A:IsSpellFiltered(spellID, spellName)
+    local filters=self.db and self.db.battle and self.db.battle.filters
+    local raw=filters and filters.spellBlacklist or ""
+    raw=TrimText(raw)
+    if raw=="" then return false end
+    local id=tostring(spellID or "")
+    local name=string.lower(TrimText(spellName))
+    for token in raw:gmatch("[^,;\n]+") do
+        token=TrimText(token)
+        if token~="" then
+            if id~="" and token==id then return true end
+            if name~="" and string.lower(token)==name then return true end
+        end
+    end
+    return false
+end
+
+function A:ApplyPreset(key)
+    if not self.db or not self.db.battle then return end
+    local b=self.db.battle
+    if key=="minimal" then
+        b.incoming.enabled=true; b.incoming.damage=true; b.incoming.healing=false; b.incoming.misses=false
+        b.outgoing.enabled=true; b.outgoing.damage=true; b.outgoing.healing=false; b.outgoing.misses=false; b.outgoing.petDamage=false
+        b.notifications.enabled=true; b.notifications.interrupts=true; b.notifications.dispels=true
+        b.nameplates.enabled=false
+        b.appearance.showSpellName=false; b.appearance.showSpellIcon=false; b.appearance.shortNumbers=true
+        b.appearance.maxMessages=8; b.appearance.lifetime=1.6; b.appearance.speed=82
+        b.filters.incomingDamageMin=100; b.filters.incomingHealingMin=100
+        b.filters.outgoingDamageMin=100; b.filters.outgoingHealingMin=100
+    elseif key=="pvp" then
+        b.incoming.enabled=true; b.incoming.damage=true; b.incoming.healing=true; b.incoming.misses=true
+        b.outgoing.enabled=true; b.outgoing.damage=true; b.outgoing.healing=true; b.outgoing.misses=true; b.outgoing.petDamage=true
+        b.notifications.enabled=true; b.notifications.interrupts=true; b.notifications.dispels=true
+        b.nameplates.enabled=true; b.nameplates.damage=true; b.nameplates.healing=false; b.nameplates.misses=true
+        b.appearance.showSpellName=true; b.appearance.showSpellIcon=true; b.appearance.shortNumbers=true
+        b.appearance.maxMessages=14; b.appearance.lifetime=2.0; b.appearance.speed=82
+        b.filters.incomingDamageMin=0; b.filters.incomingHealingMin=0
+        b.filters.outgoingDamageMin=0; b.filters.outgoingHealingMin=0
+    elseif key=="all" then
+        b.incoming.enabled=true; b.incoming.damage=true; b.incoming.healing=true; b.incoming.misses=true
+        b.outgoing.enabled=true; b.outgoing.damage=true; b.outgoing.healing=true; b.outgoing.misses=true; b.outgoing.petDamage=true
+        b.notifications.enabled=true; b.notifications.interrupts=true; b.notifications.dispels=true
+        b.nameplates.enabled=true; b.nameplates.damage=true; b.nameplates.healing=true; b.nameplates.misses=true
+        b.appearance.showSpellName=true; b.appearance.showSpellIcon=true; b.appearance.shortNumbers=false
+        b.appearance.maxMessages=20; b.appearance.lifetime=2.5; b.appearance.speed=70
+        b.filters.incomingDamageMin=0; b.filters.incomingHealingMin=0
+        b.filters.outgoingDamageMin=0; b.filters.outgoingHealingMin=0
+        b.filters.hidePeriodicDamage=false; b.filters.hidePeriodicHealing=false
+    else
+        b.incoming.enabled=true; b.incoming.damage=true; b.incoming.healing=true; b.incoming.misses=true
+        b.outgoing.enabled=true; b.outgoing.damage=true; b.outgoing.healing=true; b.outgoing.misses=true; b.outgoing.petDamage=true
+        b.notifications.enabled=true; b.notifications.interrupts=true; b.notifications.dispels=true
+        b.nameplates.enabled=false
+        b.appearance.showSpellName=true; b.appearance.showSpellIcon=true; b.appearance.shortNumbers=true
+        b.appearance.maxMessages=12; b.appearance.lifetime=2.25; b.appearance.speed=72
+        b.filters.incomingDamageMin=0; b.filters.incomingHealingMin=0
+        b.filters.outgoingDamageMin=0; b.filters.outgoingHealingMin=0
+        b.filters.hidePeriodicDamage=false; b.filters.hidePeriodicHealing=false
+    end
+    self:RefreshFeature()
+    self:RefreshOptions()
+end
+
+function A:CaptureDebugEvent(data)
+    local cfg=self.db and self.db.battle and self.db.battle.debug
+    if not cfg or not cfg.enabled then return end
+    self.debugEvents=self.debugEvents or {}
+    local event=tostring(data[2] or "?")
+    local spellID,spellName,amount
+    if event=="SWING_DAMAGE" then amount=data[12]
+    elseif event=="SWING_MISSED" then amount=data[12]
+    elseif event=="ENVIRONMENTAL_DAMAGE" then amount=data[13]
+    elseif event:find("^SPELL_") or event=="RANGE_DAMAGE" or event=="RANGE_MISSED" then
+        spellID=data[12]; spellName=data[13]
+        amount=data[15]
+    end
+    local stamp=(type(date)=="function" and date("%H:%M:%S")) or tostring(math.floor((GetTime and GetTime()) or 0))
+    self.debugEvents[#self.debugEvents+1]={
+        time=stamp,event=event,source=tostring(data[4] or "-"),dest=tostring(data[8] or "-"),
+        spellID=spellID,spellName=spellName,amount=amount,
+    }
+    local max=math.max(5,math.min(100,tonumber(cfg.maxEvents) or 30))
+    while #self.debugEvents>max do table.remove(self.debugEvents,1) end
+    if self.RefreshFeatureOptions then self:RefreshFeatureOptions() end
+end
+
+function A:ClearDebugEvents()
+    self.debugEvents={}
+    if self.RefreshFeatureOptions then self:RefreshFeatureOptions() end
+end
+
+function A:GetDebugReport()
+    local client,build,_,interface=self:GetClientBuildInfo()
+    local lines={
+        "ComfyBattleText Debug",
+        "Version: "..tostring(self.version),
+        "Client: "..tostring(client).." / Build "..tostring(build).." / Interface "..tostring(interface or "?"),
+        "PlayerGUID: "..tostring(self.playerGUID or "-"),
+        "PetGUID: "..tostring(self.petGUID or "-"),
+        "Events:"
+    }
+    for _,e in ipairs(self.debugEvents or {}) do
+        lines[#lines+1]=string.format("%s | %s | spell=%s(%s) | amount=%s | src=%s | dst=%s",
+            tostring(e.time),tostring(e.event),tostring(e.spellName or "-"),tostring(e.spellID or "-"),
+            tostring(e.amount or "-"),tostring(e.source),tostring(e.dest))
+    end
+    return table.concat(lines,"\n")
+end
+
 function A:HandleDamage(data,subevent,sourceGUID,destGUID)
     local amount,spellID,spellName,school,critical=self:DamagePayload(data,subevent)
     if not amount or amount<=0 then return end
@@ -425,6 +538,7 @@ function A:HandleDamage(data,subevent,sourceGUID,destGUID)
     local incoming=destGUID and destGUID==self.playerGUID
     local filters=self.db.battle.filters or {}
     local periodic=subevent=="SPELL_PERIODIC_DAMAGE"
+    if self:IsSpellFiltered(spellID,spellName) then return end
 
     if incoming and self.db.battle.incoming.damage
         and amount >= (SafeNumber(filters.incomingDamageMin) or 0)
@@ -451,6 +565,7 @@ function A:HandleHeal(data,subevent,sourceGUID,destGUID)
     local incoming=destGUID and destGUID==self.playerGUID
     local filters=self.db.battle.filters or {}
     local periodic=subevent=="SPELL_PERIODIC_HEAL"
+    if self:IsSpellFiltered(spellID,spellName) then return end
 
     if incoming and self.db.battle.incoming.healing
         and amount >= (SafeNumber(filters.incomingHealingMin) or 0)
@@ -473,6 +588,7 @@ function A:HandleMiss(data,subevent,sourceGUID,destGUID)
     if not missType then return end
     local ownSource=sourceGUID and (sourceGUID==self.playerGUID or sourceGUID==self.petGUID)
     local incoming=destGUID and destGUID==self.playerGUID
+    if self:IsSpellFiltered(spellID,spellName) then return end
     local label=MissText(missType)
     local text=self:DecorateText(label,spellID,spellName)
     local color={1.00,0.78,0.18}
@@ -504,6 +620,7 @@ function A:HandleCombatLog()
     local ok,data=pcall(function() return {CombatLogGetCurrentEventInfo()} end)
     if not ok or type(data)~="table" then return end
     local subevent=data[2]
+    self:CaptureDebugEvent(data)
     local sourceGUID=data[4]
     local destGUID=data[8]
     if not subevent then return end
@@ -611,12 +728,14 @@ function A:BuildGeneralOptions(page,ui)
     self.battleCategoryButtons={}
 
     local categories={
+        {"presets",self:T("CAT_PRESETS")},
         {"incoming",self:T("CAT_INCOMING")},
         {"outgoing",self:T("CAT_OUTGOING")},
         {"notifications",self:T("CAT_NOTIFICATIONS")},
         {"nameplates",self:T("CAT_NAMEPLATES")},
         {"filters",self:T("CAT_FILTERS")},
         {"appearance",self:T("CAT_APPEARANCE")},
+        {"debug",self:T("CAT_DEBUG")},
     }
 
     for i,entry in ipairs(categories) do
@@ -630,7 +749,15 @@ function A:BuildGeneralOptions(page,ui)
         self.battleCategoryPages[key]=sub
     end
 
-    local p=self.battleCategoryPages.incoming
+    local p=self.battleCategoryPages.presets
+    local t=p:CreateFontString(nil,"ARTWORK","GameFontNormalLarge"); t:SetPoint("TOPLEFT",10,-5); t:SetText(self:T("SECTION_PRESETS"))
+    local ph=p:CreateFontString(nil,"ARTWORK","GameFontHighlightSmall"); ph:SetPoint("TOPLEFT",10,-40); ph:SetWidth(500); ph:SetJustifyH("LEFT"); ph:SetText(self:T("PRESET_HINT"))
+    CategoryButton(p,self:T("PRESET_MINIMAL"),10,-90,150,function() A:ApplyPreset("minimal") end)
+    CategoryButton(p,self:T("PRESET_STANDARD"),175,-90,150,function() A:ApplyPreset("standard") end)
+    CategoryButton(p,self:T("PRESET_PVP"),340,-90,150,function() A:ApplyPreset("pvp") end)
+    CategoryButton(p,self:T("PRESET_ALL"),505,-90,120,function() A:ApplyPreset("all") end)
+
+    p=self.battleCategoryPages.incoming
     local t=p:CreateFontString(nil,"ARTWORK","GameFontNormalLarge"); t:SetPoint("TOPLEFT",10,-5); t:SetText(self:T("SECTION_INCOMING"))
     ui.CreateCheck(p,self:T("ENABLE_INCOMING"),10,-45,function() return A.db.battle.incoming.enabled end,function(v) A.db.battle.incoming.enabled=v end)
     ui.CreateCheck(p,self:T("SHOW_DAMAGE"),10,-80,function() return A.db.battle.incoming.damage end,function(v) A.db.battle.incoming.damage=v end)
@@ -674,6 +801,11 @@ function A:BuildGeneralOptions(page,ui)
     ui.CreateSlider(p,self:T("MIN_OUT_HEAL"),0,5000,50,315,-165,function() return A.db.battle.filters.outgoingHealingMin end,function(v) A.db.battle.filters.outgoingHealingMin=math.floor(v+0.5) end,function(v) return tostring(math.floor(v+0.5)) end)
     ui.CreateCheck(p,self:T("HIDE_PERIODIC_DAMAGE"),10,-225,function() return A.db.battle.filters.hidePeriodicDamage end,function(v) A.db.battle.filters.hidePeriodicDamage=v end)
     ui.CreateCheck(p,self:T("HIDE_PERIODIC_HEALING"),10,-260,function() return A.db.battle.filters.hidePeriodicHealing end,function(v) A.db.battle.filters.hidePeriodicHealing=v end)
+    local fl=p:CreateFontString(nil,"ARTWORK","GameFontNormal"); fl:SetPoint("TOPLEFT",10,-315); fl:SetWidth(520); fl:SetJustifyH("LEFT"); fl:SetText(self:T("SPELL_BLACKLIST"))
+    self.spellBlacklistEdit=ui.CreateEdit(p,10,-340,560,28,false)
+    self.spellBlacklistEdit:SetText(A.db.battle.filters.spellBlacklist or "")
+    self.spellBlacklistEdit:SetScript("OnEnterPressed",function(self) A.db.battle.filters.spellBlacklist=self:GetText() or ""; self:ClearFocus() end)
+    self.spellBlacklistEdit:SetScript("OnEditFocusLost",function(self) A.db.battle.filters.spellBlacklist=self:GetText() or "" end)
 
     p=self.battleCategoryPages.appearance
     t=p:CreateFontString(nil,"ARTWORK","GameFontNormalLarge"); t:SetPoint("TOPLEFT",10,-5); t:SetText(self:T("SECTION_APPEARANCE"))
@@ -689,6 +821,15 @@ function A:BuildGeneralOptions(page,ui)
     ui.CreateButton(p,self:T("TEST_TEXT"),10,-420,150,function() A:TestMessages() end)
     ui.CreateButton(p,self:T("RESET_AREAS"),175,-420,190,function() A:ResetAreaPositions() end)
 
+    p=self.battleCategoryPages.debug
+    t=p:CreateFontString(nil,"ARTWORK","GameFontNormalLarge"); t:SetPoint("TOPLEFT",10,-5); t:SetText(self:T("SECTION_DEBUG"))
+    ui.CreateCheck(p,self:T("DEBUG_ENABLE"),10,-45,function() return A.db.battle.debug.enabled end,function(v) A.db.battle.debug.enabled=v end)
+    local dh=p:CreateFontString(nil,"ARTWORK","GameFontHighlightSmall"); dh:SetPoint("TOPLEFT",10,-80); dh:SetWidth(520); dh:SetJustifyH("LEFT"); dh:SetText(self:T("DEBUG_HINT"))
+    ui.CreateButton(p,self:T("DEBUG_REFRESH"),10,-115,150,function() A:RefreshFeatureOptions() end)
+    ui.CreateButton(p,self:T("DEBUG_CLEAR"),175,-115,150,function() A:ClearDebugEvents() end)
+    self.debugReportEdit=ui.CreateEdit(p,10,-155,520,280,true)
+    self.debugReportEdit:SetText(A:GetDebugReport())
+
     local note=page:CreateFontString(nil,"ARTWORK","GameFontHighlightSmall")
     note:SetPoint("BOTTOMLEFT",195,20)
     note:SetWidth(520)
@@ -696,4 +837,14 @@ function A:BuildGeneralOptions(page,ui)
     note:SetText(self:T("FOREVER_NOTE"))
 
     self:ShowBattleCategory(self.db.battle.category or "incoming")
+end
+
+function A:RefreshFeatureOptions()
+    if self.spellBlacklistEdit and not self.spellBlacklistEdit:HasFocus() then
+        self.spellBlacklistEdit:SetText((self.db and self.db.battle and self.db.battle.filters and self.db.battle.filters.spellBlacklist) or "")
+    end
+    if self.debugReportEdit and not self.debugReportEdit:HasFocus() then
+        self.debugReportEdit:SetText(self:GetDebugReport())
+        self.debugReportEdit:SetCursorPosition(0)
+    end
 end
