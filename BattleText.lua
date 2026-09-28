@@ -423,13 +423,20 @@ function A:HandleDamage(data,subevent,sourceGUID,destGUID)
     local ownSource=sourceGUID and (sourceGUID==self.playerGUID or sourceGUID==self.petGUID)
     local fromPet=sourceGUID and self.petGUID and sourceGUID==self.petGUID
     local incoming=destGUID and destGUID==self.playerGUID
+    local filters=self.db.battle.filters or {}
+    local periodic=subevent=="SPELL_PERIODIC_DAMAGE"
 
-    if incoming and self.db.battle.incoming.damage then
+    if incoming and self.db.battle.incoming.damage
+        and amount >= (SafeNumber(filters.incomingDamageMin) or 0)
+        and not (periodic and filters.hidePeriodicDamage) then
         local text=self:DecorateText("-"..self:FormatAmount(amount),spellID,spellName)
         self:PushText("incoming",text,{1.00,0.28,0.22},self.db.battle.incoming.fontSize,critical)
     end
 
-    if ownSource and self.db.battle.outgoing.damage and (not fromPet or self.db.battle.outgoing.petDamage) then
+    if ownSource and self.db.battle.outgoing.damage
+        and (not fromPet or self.db.battle.outgoing.petDamage)
+        and amount >= (SafeNumber(filters.outgoingDamageMin) or 0)
+        and not (periodic and filters.hidePeriodicDamage) then
         local color=self.db.battle.appearance.schoolColors and SchoolColor(school) or {1.00,0.82,0.15}
         local text=self:DecorateText(self:FormatAmount(amount),spellID,spellName)
         self:PushText("outgoing",text,color,self.db.battle.outgoing.fontSize,critical)
@@ -442,13 +449,19 @@ function A:HandleHeal(data,subevent,sourceGUID,destGUID)
     if not amount or amount<=0 then return end
     local ownSource=sourceGUID and (sourceGUID==self.playerGUID or sourceGUID==self.petGUID)
     local incoming=destGUID and destGUID==self.playerGUID
+    local filters=self.db.battle.filters or {}
+    local periodic=subevent=="SPELL_PERIODIC_HEAL"
 
-    if incoming and self.db.battle.incoming.healing then
+    if incoming and self.db.battle.incoming.healing
+        and amount >= (SafeNumber(filters.incomingHealingMin) or 0)
+        and not (periodic and filters.hidePeriodicHealing) then
         local text=self:DecorateText("+"..self:FormatAmount(amount),spellID,spellName)
         self:PushText("incoming",text,{0.30,1.00,0.42},self.db.battle.incoming.fontSize,critical)
     end
 
-    if ownSource and self.db.battle.outgoing.healing and not incoming then
+    if ownSource and self.db.battle.outgoing.healing and not incoming
+        and amount >= (SafeNumber(filters.outgoingHealingMin) or 0)
+        and not (periodic and filters.hidePeriodicHealing) then
         local text=self:DecorateText("+"..self:FormatAmount(amount),spellID,spellName)
         self:PushText("outgoing",text,{0.30,1.00,0.42},self.db.battle.outgoing.fontSize,critical)
         if self.db.battle.nameplates.healing then self:PushNameplateText(destGUID,text,{0.30,1.00,0.42},critical) end
@@ -602,6 +615,7 @@ function A:BuildGeneralOptions(page,ui)
         {"outgoing",self:T("CAT_OUTGOING")},
         {"notifications",self:T("CAT_NOTIFICATIONS")},
         {"nameplates",self:T("CAT_NAMEPLATES")},
+        {"filters",self:T("CAT_FILTERS")},
         {"appearance",self:T("CAT_APPEARANCE")},
     }
 
@@ -651,6 +665,15 @@ function A:BuildGeneralOptions(page,ui)
     ui.CreateCheck(p,self:T("SHOW_MISSES"),10,-150,function() return A.db.battle.nameplates.misses end,function(v) A.db.battle.nameplates.misses=v end)
     ui.CreateSlider(p,self:T("FONT_SIZE"),12,32,1,20,-235,function() return A.db.battle.nameplates.fontSize end,function(v) A.db.battle.nameplates.fontSize=math.floor(v+0.5) end,function(v) return tostring(math.floor(v+0.5)) end)
     ui.CreateSlider(p,self:T("MESSAGE_LIFETIME"),0.5,2.5,0.05,315,-235,function() return A.db.battle.nameplates.lifetime end,function(v) A.db.battle.nameplates.lifetime=math.floor(v*20+0.5)/20 end,function(v) return string.format("%.2fs",v) end)
+
+    p=self.battleCategoryPages.filters
+    t=p:CreateFontString(nil,"ARTWORK","GameFontNormalLarge"); t:SetPoint("TOPLEFT",10,-5); t:SetText(self:T("SECTION_FILTERS"))
+    ui.CreateSlider(p,self:T("MIN_IN_DAMAGE"),0,5000,50,20,-80,function() return A.db.battle.filters.incomingDamageMin end,function(v) A.db.battle.filters.incomingDamageMin=math.floor(v+0.5) end,function(v) return tostring(math.floor(v+0.5)) end)
+    ui.CreateSlider(p,self:T("MIN_IN_HEAL"),0,5000,50,315,-80,function() return A.db.battle.filters.incomingHealingMin end,function(v) A.db.battle.filters.incomingHealingMin=math.floor(v+0.5) end,function(v) return tostring(math.floor(v+0.5)) end)
+    ui.CreateSlider(p,self:T("MIN_OUT_DAMAGE"),0,5000,50,20,-165,function() return A.db.battle.filters.outgoingDamageMin end,function(v) A.db.battle.filters.outgoingDamageMin=math.floor(v+0.5) end,function(v) return tostring(math.floor(v+0.5)) end)
+    ui.CreateSlider(p,self:T("MIN_OUT_HEAL"),0,5000,50,315,-165,function() return A.db.battle.filters.outgoingHealingMin end,function(v) A.db.battle.filters.outgoingHealingMin=math.floor(v+0.5) end,function(v) return tostring(math.floor(v+0.5)) end)
+    ui.CreateCheck(p,self:T("HIDE_PERIODIC_DAMAGE"),10,-225,function() return A.db.battle.filters.hidePeriodicDamage end,function(v) A.db.battle.filters.hidePeriodicDamage=v end)
+    ui.CreateCheck(p,self:T("HIDE_PERIODIC_HEALING"),10,-260,function() return A.db.battle.filters.hidePeriodicHealing end,function(v) A.db.battle.filters.hidePeriodicHealing=v end)
 
     p=self.battleCategoryPages.appearance
     t=p:CreateFontString(nil,"ARTWORK","GameFontNormalLarge"); t:SetPoint("TOPLEFT",10,-5); t:SetText(self:T("SECTION_APPEARANCE"))
