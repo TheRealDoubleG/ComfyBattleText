@@ -12,12 +12,13 @@ local EN = {
     INFO_THANKS="Thanks for using ComfyBattleText! Feedback and bug reports are welcome via Discord.",
 
     CAT_INCOMING="Incoming", CAT_OUTGOING="Outgoing", CAT_NOTIFICATIONS="Notifications",
-    CAT_NAMEPLATES="Nameplates", CAT_APPEARANCE="Appearance",
+    CAT_NAMEPLATES="Nameplates", CAT_FILTERS="Filters", CAT_APPEARANCE="Appearance",
 
     SECTION_INCOMING="Incoming combat text",
     SECTION_OUTGOING="Outgoing combat text",
     SECTION_NOTIFICATIONS="Combat notifications",
     SECTION_NAMEPLATES="Nameplate combat text",
+    SECTION_FILTERS="Spam filters",
     SECTION_APPEARANCE="Appearance and scroll areas",
 
     ENABLE_INCOMING="Enable incoming area", ENABLE_OUTGOING="Enable outgoing area",
@@ -25,6 +26,9 @@ local EN = {
     SHOW_DAMAGE="Show damage", SHOW_HEALING="Show healing", SHOW_MISSES="Show misses / avoids",
     SHOW_PET_DAMAGE="Include own pet damage", SHOW_INTERRUPTS="Show successful interrupts",
     SHOW_DISPELS="Show dispels / spell steals",
+    MIN_IN_DAMAGE="Minimum incoming damage", MIN_IN_HEAL="Minimum incoming healing",
+    MIN_OUT_DAMAGE="Minimum outgoing damage", MIN_OUT_HEAL="Minimum outgoing healing",
+    HIDE_PERIODIC_DAMAGE="Hide periodic damage", HIDE_PERIODIC_HEALING="Hide periodic healing",
 
     FONT_SIZE="Font size", DIRECTION="Scroll direction", DIR_UP="Up", DIR_DOWN="Down",
     SHORT_NUMBERS="Shorten large numbers (12.4k)", SHOW_SPELL_NAME="Show spell names",
@@ -50,12 +54,13 @@ local DE = {
     INFO_THANKS="Danke, dass du ComfyBattleText nutzt! Feedback und Fehlermeldungen sind über Discord willkommen.",
 
     CAT_INCOMING="Eingehend", CAT_OUTGOING="Ausgehend", CAT_NOTIFICATIONS="Hinweise",
-    CAT_NAMEPLATES="Namensplaketten", CAT_APPEARANCE="Darstellung",
+    CAT_NAMEPLATES="Namensplaketten", CAT_FILTERS="Filter", CAT_APPEARANCE="Darstellung",
 
     SECTION_INCOMING="Eingehender Kampftext",
     SECTION_OUTGOING="Ausgehender Kampftext",
     SECTION_NOTIFICATIONS="Kampfhinweise",
     SECTION_NAMEPLATES="Kampftext an Namensplaketten",
+    SECTION_FILTERS="Spam-Filter",
     SECTION_APPEARANCE="Darstellung und Scrollbereiche",
 
     ENABLE_INCOMING="Eingehenden Bereich aktivieren", ENABLE_OUTGOING="Ausgehenden Bereich aktivieren",
@@ -63,6 +68,9 @@ local DE = {
     SHOW_DAMAGE="Schaden anzeigen", SHOW_HEALING="Heilung anzeigen", SHOW_MISSES="Verfehlt / Vermeidung anzeigen",
     SHOW_PET_DAMAGE="Schaden des eigenen Begleiters einbeziehen", SHOW_INTERRUPTS="Erfolgreiche Unterbrechungen anzeigen",
     SHOW_DISPELS="Bannungen / Zauberraub anzeigen",
+    MIN_IN_DAMAGE="Mindestwert eingehender Schaden", MIN_IN_HEAL="Mindestwert eingehende Heilung",
+    MIN_OUT_DAMAGE="Mindestwert ausgehender Schaden", MIN_OUT_HEAL="Mindestwert ausgehende Heilung",
+    HIDE_PERIODIC_DAMAGE="Periodischen Schaden ausblenden", HIDE_PERIODIC_HEALING="Periodische Heilung ausblenden",
 
     FONT_SIZE="Schriftgröße", DIRECTION="Scrollrichtung", DIR_UP="Nach oben", DIR_DOWN="Nach unten",
     SHORT_NUMBERS="Große Zahlen kürzen (12,4k)", SHOW_SPELL_NAME="Zaubernamen anzeigen",
