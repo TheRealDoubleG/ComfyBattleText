@@ -12,7 +12,7 @@ local EN = {
     INFO_THANKS="Thanks for using ComfyBattleText! Feedback and bug reports are welcome via Discord.",
 
     CAT_PRESETS="Presets", CAT_INCOMING="Incoming", CAT_OUTGOING="Outgoing", CAT_NOTIFICATIONS="Notifications",
-    CAT_NAMEPLATES="Nameplates", CAT_FILTERS="Filters", CAT_APPEARANCE="Appearance", CAT_DEBUG="Debug",
+    CAT_NAMEPLATES="Nameplates", CAT_FILTERS="Filters", CAT_APPEARANCE="Appearance", CAT_STYLE="Style", CAT_DEBUG="Debug",
 
     SECTION_PRESETS="Quick presets",
     SECTION_INCOMING="Incoming combat text",
@@ -21,6 +21,7 @@ local EN = {
     SECTION_NAMEPLATES="Nameplate combat text",
     SECTION_FILTERS="Spam filters",
     SECTION_APPEARANCE="Appearance and scroll areas",
+    SECTION_STYLE="Font, colors and hit merging",
     SECTION_DEBUG="Forever combat-log debug",
 
     ENABLE_INCOMING="Enable incoming area", ENABLE_OUTGOING="Enable outgoing area",
@@ -37,6 +38,10 @@ local EN = {
     DEBUG_ENABLE="Record recent combat-log events", DEBUG_REFRESH="Refresh report", DEBUG_CLEAR="Clear report",
     DEBUG_HINT="Use this while testing on WoW Forever. Select the report text and copy it into a bug report.",
     DEBUG_ON="Combat-log debug enabled.", DEBUG_OFF="Combat-log debug disabled.",
+    FONT_PATH="Font path", MERGE_WINDOW="Merge rapid hits", COLOR_IN_DAMAGE="Incoming damage color",
+    COLOR_HEAL="Healing color", COLOR_OUT_DAMAGE="Outgoing damage color", COLOR_MISS="Miss/avoid color",
+    COLOR_INTERRUPT="Interrupt color", COLOR_DISPEL="Dispel color",
+    COLOR_HINT="Use six-digit RGB hex values, for example FF4738. Invalid values fall back safely.",
 
     FONT_SIZE="Font size", DIRECTION="Scroll direction", DIR_UP="Up", DIR_DOWN="Down",
     SHORT_NUMBERS="Shorten large numbers (12.4k)", SHOW_SPELL_NAME="Show spell names",
@@ -62,7 +67,7 @@ local DE = {
     INFO_THANKS="Danke, dass du ComfyBattleText nutzt! Feedback und Fehlermeldungen sind über Discord willkommen.",
 
     CAT_PRESETS="Voreinstellungen", CAT_INCOMING="Eingehend", CAT_OUTGOING="Ausgehend", CAT_NOTIFICATIONS="Hinweise",
-    CAT_NAMEPLATES="Namensplaketten", CAT_FILTERS="Filter", CAT_APPEARANCE="Darstellung", CAT_DEBUG="Debug",
+    CAT_NAMEPLATES="Namensplaketten", CAT_FILTERS="Filter", CAT_APPEARANCE="Darstellung", CAT_STYLE="Stil", CAT_DEBUG="Debug",
 
     SECTION_PRESETS="Schnelle Voreinstellungen",
     SECTION_INCOMING="Eingehender Kampftext",
@@ -71,6 +76,7 @@ local DE = {
     SECTION_NAMEPLATES="Kampftext an Namensplaketten",
     SECTION_FILTERS="Spam-Filter",
     SECTION_APPEARANCE="Darstellung und Scrollbereiche",
+    SECTION_STYLE="Schrift, Farben und Treffer-Zusammenfassung",
     SECTION_DEBUG="Forever-Combat-Log-Debug",
 
     ENABLE_INCOMING="Eingehenden Bereich aktivieren", ENABLE_OUTGOING="Ausgehenden Bereich aktivieren",
@@ -87,6 +93,10 @@ local DE = {
     DEBUG_ENABLE="Letzte Combat-Log-Ereignisse aufzeichnen", DEBUG_REFRESH="Bericht aktualisieren", DEBUG_CLEAR="Bericht leeren",
     DEBUG_HINT="Zum Testen in WoW Forever. Bericht markieren, kopieren und bei einem Fehler mitsenden.",
     DEBUG_ON="Combat-Log-Debug aktiviert.", DEBUG_OFF="Combat-Log-Debug deaktiviert.",
+    FONT_PATH="Schriftpfad", MERGE_WINDOW="Schnelle Treffer zusammenfassen", COLOR_IN_DAMAGE="Farbe eingehender Schaden",
+    COLOR_HEAL="Farbe Heilung", COLOR_OUT_DAMAGE="Farbe ausgehender Schaden", COLOR_MISS="Farbe Verfehlt/Vermeidung",
+    COLOR_INTERRUPT="Farbe Unterbrechen", COLOR_DISPEL="Farbe Bannung",
+    COLOR_HINT="Sechsstellige RGB-Hexwerte verwenden, z. B. FF4738. Ungültige Werte fallen sicher auf Standardfarben zurück.",
 
     FONT_SIZE="Schriftgröße", DIRECTION="Scrollrichtung", DIR_UP="Nach oben", DIR_DOWN="Nach unten",
     SHORT_NUMBERS="Große Zahlen kürzen (12,4k)", SHOW_SPELL_NAME="Zaubernamen anzeigen",
