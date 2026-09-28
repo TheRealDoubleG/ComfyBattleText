@@ -799,10 +799,25 @@ function A:BuildGeneralOptions(page,ui)
         {"debug",self:T("CAT_DEBUG")},
     }
 
+    self.battleCategoryLabels={}
+    self.battleCategoryOrder={}
+    local search=CreateFrame("EditBox",nil,page,"InputBoxTemplate")
+    search:SetPoint("TOPLEFT",20,-78)
+    search:SetSize(155,24)
+    search:SetAutoFocus(false)
+    search:SetText("")
+    search:SetScript("OnEscapePressed",function(self) self:ClearFocus() end)
+    local searchHint=page:CreateFontString(nil,"ARTWORK","GameFontHighlightSmall")
+    searchHint:SetPoint("BOTTOMLEFT",search,"TOPLEFT",2,2)
+    searchHint:SetText(self:T("SETTINGS_SEARCH"))
+    self.battleCategorySearch=search
+
     for i,entry in ipairs(categories) do
         local key,label=entry[1],entry[2]
-        local button=CategoryButton(page,label,20,-95-(i-1)*32,155,function() A:ShowBattleCategory(key) end)
+        local button=CategoryButton(page,label,20,-120-(i-1)*32,155,function() A:ShowBattleCategory(key) end)
         self.battleCategoryButtons[key]=button
+        self.battleCategoryLabels[key]=label
+        self.battleCategoryOrder[#self.battleCategoryOrder+1]=key
         local sub=CreateFrame("Frame",nil,page)
         sub:SetPoint("TOPLEFT",195,-85)
         sub:SetPoint("BOTTOMRIGHT",-20,20)
@@ -922,6 +937,37 @@ function A:BuildGeneralOptions(page,ui)
     note:SetWidth(520)
     note:SetJustifyH("LEFT")
     note:SetText(self:T("FOREVER_NOTE"))
+
+    search:SetScript("OnTextChanged",function(self)
+        local needle=tostring(self:GetText() or ""):lower():match("^%s*(.-)%s*$")
+        local visible=0
+        local firstVisible=nil
+        for _,key in ipairs(A.battleCategoryOrder or {}) do
+            local button=A.battleCategoryButtons[key]
+            local label=tostring(A.battleCategoryLabels[key] or ""):lower()
+            local keywords={
+                presets="preset voreinstellung minimal standard pvp alles",
+                incoming="incoming eingehend damage schaden heal heilung miss",
+                outgoing="outgoing ausgehend damage schaden heal heilung pet begleiter",
+                notifications="notification hinweis interrupt unterbrechen dispel bannung",
+                nameplates="nameplate namensplakette",
+                filters="filter spell zauber dot hot minimum mindestwert",
+                appearance="appearance darstellung scroll größe size lifetime speed",
+                style="style stil font schrift color farbe merge zusammenfassen",
+                debug="debug combat log fehler test",
+            }
+            local haystack=label.." "..tostring(keywords[key] or "")
+            local show=needle=="" or haystack:find(needle,1,true)~=nil
+            button:SetShown(show)
+            if show then
+                visible=visible+1
+                firstVisible=firstVisible or key
+                button:ClearAllPoints()
+                button:SetPoint("TOPLEFT",20,-120-(visible-1)*32)
+            end
+        end
+        if firstVisible and needle~="" then A:ShowBattleCategory(firstVisible) end
+    end)
 
     self:ShowBattleCategory(self.db.battle.category or "incoming")
 end
