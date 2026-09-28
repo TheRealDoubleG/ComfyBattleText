@@ -42,6 +42,7 @@ local EN = {
     COLOR_HEAL="Healing color", COLOR_OUT_DAMAGE="Outgoing damage color", COLOR_MISS="Miss/avoid color",
     COLOR_INTERRUPT="Interrupt color", COLOR_DISPEL="Dispel color",
     COLOR_HINT="Use six-digit RGB hex values, for example FF4738. Invalid values fall back safely.",
+    SETTINGS_SEARCH="Search settings...",
 
     FONT_SIZE="Font size", DIRECTION="Scroll direction", DIR_UP="Up", DIR_DOWN="Down",
     SHORT_NUMBERS="Shorten large numbers (12.4k)", SHOW_SPELL_NAME="Show spell names",
@@ -97,6 +98,7 @@ local DE = {
     COLOR_HEAL="Farbe Heilung", COLOR_OUT_DAMAGE="Farbe ausgehender Schaden", COLOR_MISS="Farbe Verfehlt/Vermeidung",
     COLOR_INTERRUPT="Farbe Unterbrechen", COLOR_DISPEL="Farbe Bannung",
     COLOR_HINT="Sechsstellige RGB-Hexwerte verwenden, z. B. FF4738. Ungültige Werte fallen sicher auf Standardfarben zurück.",
+    SETTINGS_SEARCH="Einstellungen suchen...",
 
     FONT_SIZE="Schriftgröße", DIRECTION="Scrollrichtung", DIR_UP="Nach oben", DIR_DOWN="Nach unten",
     SHORT_NUMBERS="Große Zahlen kürzen (12,4k)", SHOW_SPELL_NAME="Zaubernamen anzeigen",
