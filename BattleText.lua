@@ -42,6 +42,16 @@ local function Clamp(v,lo,hi)
     return v
 end
 
+local function HexColor(value, fallback)
+    value=tostring(value or ""):gsub("#",""):gsub("%s+",""):upper()
+    if not value:match("^[0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F]$") then return fallback end
+    local r=tonumber(value:sub(1,2),16)
+    local g=tonumber(value:sub(3,4),16)
+    local b=tonumber(value:sub(5,6),16)
+    if not r or not g or not b then return fallback end
+    return {r/255,g/255,b/255}
+end
+
 local function CompactNumber(value)
     value=math.max(0,SafeNumber(value) or 0)
     if value>=1000000 then
@@ -239,6 +249,21 @@ function A:TrimArea(areaKey)
     end
 end
 
+function A:SetMessageFont(fs,size)
+    local appearance=self.db and self.db.battle and self.db.battle.appearance or {}
+    local chosen=tostring(appearance.fontPath or ""):gsub("^%s+",""):gsub("%s+$","")
+    if chosen=="" then chosen=STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF" end
+    local ok,result=pcall(fs.SetFont,fs,chosen,size,"OUTLINE")
+    if not ok or result==false then
+        pcall(fs.SetFont,fs,STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF",size,"OUTLINE")
+    end
+end
+
+function A:GetStyleColor(key,fallback)
+    local colors=self.db and self.db.battle and self.db.battle.appearance and self.db.battle.appearance.colors
+    return HexColor(colors and colors[key],fallback)
+end
+
 function A:PushText(areaKey,text,color,size,critical)
     if not self.db or not self.db.enabled then return end
     local route=self:GetRouteConfig(areaKey)
@@ -251,8 +276,7 @@ function A:PushText(areaKey,text,color,size,critical)
     local fs=self:GetMessageFont(areaKey)
     local fontSize=Clamp(size or route.fontSize or 20,10,42)
     if critical then fontSize=fontSize*Clamp(self.db.battle.appearance.critScale,1,2) end
-    local font=STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF"
-    pcall(fs.SetFont,fs,font,fontSize,"OUTLINE")
+    self:SetMessageFont(fs,fontSize)
     fs:SetText(tostring(text or ""))
     color=color or {1,1,1}
     fs:SetTextColor(color[1] or 1,color[2] or 1,color[3] or 1,1)
@@ -323,7 +347,7 @@ function A:PushNameplateText(destGUID,text,color,critical)
     f:SetFrameLevel((plate:GetFrameLevel() or 1)+15)
     local size=Clamp(cfg.fontSize,10,36)
     if critical then size=size*Clamp(self.db.battle.appearance.critScale,1,2) end
-    pcall(f.text.SetFont,f.text,STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF",size,"OUTLINE")
+    self:SetMessageFont(f.text,size)
     f.text:SetText(tostring(text or ""))
     color=color or {1,1,1}
     f.text:SetTextColor(color[1] or 1,color[2] or 1,color[3] or 1,1)
@@ -333,6 +357,7 @@ function A:PushNameplateText(destGUID,text,color,critical)
 end
 
 function A:UpdateAnimations(elapsed)
+    self:UpdateMerged(elapsed)
     for i=#self.activeMessages,1,-1 do
         local entry=self.activeMessages[i]
         entry.age=entry.age+elapsed
@@ -530,6 +555,44 @@ function A:GetDebugReport()
     return table.concat(lines,"\n")
 end
 
+A.pendingMerged = A.pendingMerged or {}
+
+function A:EmitAmount(areaKey, sign, amount, spellID, spellName, color, size, critical, destGUID, showOnNameplate)
+    local appearance=self.db and self.db.battle and self.db.battle.appearance or {}
+    local window=Clamp(appearance.mergeWindow or 0,0,0.5)
+    local function emit(total, anyCrit)
+        local prefix=sign or ""
+        local text=self:DecorateText(prefix..self:FormatAmount(total),spellID,spellName)
+        self:PushText(areaKey,text,color,size,anyCrit)
+        if showOnNameplate and destGUID then self:PushNameplateText(destGUID,text,color,anyCrit) end
+    end
+    if window<=0 then emit(amount,critical) return end
+
+    local key=table.concat({
+        tostring(areaKey), tostring(sign or ""), tostring(spellID or spellName or "melee"), tostring(destGUID or "-")
+    },"|")
+    local entry=self.pendingMerged[key]
+    if entry then
+        entry.amount=entry.amount+amount
+        entry.critical=entry.critical or critical
+    else
+        self.pendingMerged[key]={
+            age=0, window=window, amount=amount, critical=critical and true or false,
+            emit=emit,
+        }
+    end
+end
+
+function A:UpdateMerged(elapsed)
+    for key,entry in pairs(self.pendingMerged or {}) do
+        entry.age=(entry.age or 0)+elapsed
+        if entry.age>=(entry.window or 0) then
+            self.pendingMerged[key]=nil
+            entry.emit(entry.amount,entry.critical)
+        end
+    end
+end
+
 function A:HandleDamage(data,subevent,sourceGUID,destGUID)
     local amount,spellID,spellName,school,critical=self:DamagePayload(data,subevent)
     if not amount or amount<=0 then return end
@@ -543,18 +606,16 @@ function A:HandleDamage(data,subevent,sourceGUID,destGUID)
     if incoming and self.db.battle.incoming.damage
         and amount >= (SafeNumber(filters.incomingDamageMin) or 0)
         and not (periodic and filters.hidePeriodicDamage) then
-        local text=self:DecorateText("-"..self:FormatAmount(amount),spellID,spellName)
-        self:PushText("incoming",text,{1.00,0.28,0.22},self.db.battle.incoming.fontSize,critical)
+        local color=self:GetStyleColor("incomingDamage",{1.00,0.28,0.22})
+        self:EmitAmount("incoming","-",amount,spellID,spellName,color,self.db.battle.incoming.fontSize,critical,nil,false)
     end
 
     if ownSource and self.db.battle.outgoing.damage
         and (not fromPet or self.db.battle.outgoing.petDamage)
         and amount >= (SafeNumber(filters.outgoingDamageMin) or 0)
         and not (periodic and filters.hidePeriodicDamage) then
-        local color=self.db.battle.appearance.schoolColors and SchoolColor(school) or {1.00,0.82,0.15}
-        local text=self:DecorateText(self:FormatAmount(amount),spellID,spellName)
-        self:PushText("outgoing",text,color,self.db.battle.outgoing.fontSize,critical)
-        if self.db.battle.nameplates.damage then self:PushNameplateText(destGUID,text,color,critical) end
+        local color=self.db.battle.appearance.schoolColors and SchoolColor(school) or self:GetStyleColor("outgoingDamage",{1.00,0.82,0.15})
+        self:EmitAmount("outgoing","",amount,spellID,spellName,color,self.db.battle.outgoing.fontSize,critical,destGUID,self.db.battle.nameplates.damage)
     end
 end
 
@@ -570,16 +631,15 @@ function A:HandleHeal(data,subevent,sourceGUID,destGUID)
     if incoming and self.db.battle.incoming.healing
         and amount >= (SafeNumber(filters.incomingHealingMin) or 0)
         and not (periodic and filters.hidePeriodicHealing) then
-        local text=self:DecorateText("+"..self:FormatAmount(amount),spellID,spellName)
-        self:PushText("incoming",text,{0.30,1.00,0.42},self.db.battle.incoming.fontSize,critical)
+        local color=self:GetStyleColor("healing",{0.30,1.00,0.42})
+        self:EmitAmount("incoming","+",amount,spellID,spellName,color,self.db.battle.incoming.fontSize,critical,nil,false)
     end
 
     if ownSource and self.db.battle.outgoing.healing and not incoming
         and amount >= (SafeNumber(filters.outgoingHealingMin) or 0)
         and not (periodic and filters.hidePeriodicHealing) then
-        local text=self:DecorateText("+"..self:FormatAmount(amount),spellID,spellName)
-        self:PushText("outgoing",text,{0.30,1.00,0.42},self.db.battle.outgoing.fontSize,critical)
-        if self.db.battle.nameplates.healing then self:PushNameplateText(destGUID,text,{0.30,1.00,0.42},critical) end
+        local color=self:GetStyleColor("healing",{0.30,1.00,0.42})
+        self:EmitAmount("outgoing","+",amount,spellID,spellName,color,self.db.battle.outgoing.fontSize,critical,destGUID,self.db.battle.nameplates.healing)
     end
 end
 
@@ -591,7 +651,7 @@ function A:HandleMiss(data,subevent,sourceGUID,destGUID)
     if self:IsSpellFiltered(spellID,spellName) then return end
     local label=MissText(missType)
     local text=self:DecorateText(label,spellID,spellName)
-    local color={1.00,0.78,0.18}
+    local color=self:GetStyleColor("miss",{1.00,0.78,0.18})
 
     if incoming and self.db.battle.incoming.misses then self:PushText("incoming",text,color,self.db.battle.incoming.fontSize,false) end
     if ownSource and self.db.battle.outgoing.misses then
@@ -606,12 +666,12 @@ function A:HandleNotification(data,subevent,sourceGUID)
         local extraName=data[16]
         local spellID=SafeNumber(data[12])
         local text=self:T("INTERRUPT")..": "..tostring(extraName or "?")
-        self:PushText("notifications",self:DecorateText(text,spellID,nil),{1.00,0.55,0.18},self.db.battle.notifications.fontSize,false)
+        self:PushText("notifications",self:DecorateText(text,spellID,nil),self:GetStyleColor("interrupt",{1.00,0.55,0.18}),self.db.battle.notifications.fontSize,false)
     elseif (subevent=="SPELL_DISPEL" or subevent=="SPELL_STOLEN") and self.db.battle.notifications.dispels then
         local extraName=data[16]
         local spellID=SafeNumber(data[12])
         local text=self:T("DISPEL")..": "..tostring(extraName or "?")
-        self:PushText("notifications",self:DecorateText(text,spellID,nil),{0.35,0.82,1.00},self.db.battle.notifications.fontSize,false)
+        self:PushText("notifications",self:DecorateText(text,spellID,nil),self:GetStyleColor("dispel",{0.35,0.82,1.00}),self.db.battle.notifications.fontSize,false)
     end
 end
 
@@ -735,6 +795,7 @@ function A:BuildGeneralOptions(page,ui)
         {"nameplates",self:T("CAT_NAMEPLATES")},
         {"filters",self:T("CAT_FILTERS")},
         {"appearance",self:T("CAT_APPEARANCE")},
+        {"style",self:T("CAT_STYLE")},
         {"debug",self:T("CAT_DEBUG")},
     }
 
@@ -821,6 +882,32 @@ function A:BuildGeneralOptions(page,ui)
     ui.CreateButton(p,self:T("TEST_TEXT"),10,-420,150,function() A:TestMessages() end)
     ui.CreateButton(p,self:T("RESET_AREAS"),175,-420,190,function() A:ResetAreaPositions() end)
 
+    p=self.battleCategoryPages.style
+    t=p:CreateFontString(nil,"ARTWORK","GameFontNormalLarge"); t:SetPoint("TOPLEFT",10,-5); t:SetText(self:T("SECTION_STYLE"))
+    local fontLabel=p:CreateFontString(nil,"ARTWORK","GameFontNormal"); fontLabel:SetPoint("TOPLEFT",10,-45); fontLabel:SetText(self:T("FONT_PATH"))
+    self.fontPathEdit=ui.CreateEdit(p,10,-68,500,28,false)
+    self.fontPathEdit:SetText(A.db.battle.appearance.fontPath or "")
+    self.fontPathEdit:SetScript("OnEnterPressed",function(self) A.db.battle.appearance.fontPath=self:GetText() or ""; self:ClearFocus() end)
+    self.fontPathEdit:SetScript("OnEditFocusLost",function(self) A.db.battle.appearance.fontPath=self:GetText() or "" end)
+    ui.CreateSlider(p,self:T("MERGE_WINDOW"),0,0.5,0.01,20,-135,function() return A.db.battle.appearance.mergeWindow end,function(v) A.db.battle.appearance.mergeWindow=math.floor(v*100+0.5)/100 end,function(v) return string.format("%.2fs",v) end)
+
+    local colorHint=p:CreateFontString(nil,"ARTWORK","GameFontHighlightSmall"); colorHint:SetPoint("TOPLEFT",10,-190); colorHint:SetWidth(540); colorHint:SetJustifyH("LEFT"); colorHint:SetText(self:T("COLOR_HINT"))
+    local colorDefs={
+        {"incomingDamage","COLOR_IN_DAMAGE",10,-235},{"healing","COLOR_HEAL",285,-235},
+        {"outgoingDamage","COLOR_OUT_DAMAGE",10,-300},{"miss","COLOR_MISS",285,-300},
+        {"interrupt","COLOR_INTERRUPT",10,-365},{"dispel","COLOR_DISPEL",285,-365},
+    }
+    self.styleColorEdits=self.styleColorEdits or {}
+    for _,def in ipairs(colorDefs) do
+        local key,labelKey,x,y=def[1],def[2],def[3],def[4]
+        local lab=p:CreateFontString(nil,"ARTWORK","GameFontNormal"); lab:SetPoint("TOPLEFT",x,y); lab:SetText(self:T(labelKey))
+        local edit=ui.CreateEdit(p,x,y-22,190,28,false)
+        edit:SetText(A.db.battle.appearance.colors[key] or "")
+        edit:SetScript("OnEnterPressed",function(self) A.db.battle.appearance.colors[key]=(self:GetText() or ""):gsub("#",""):upper(); self:ClearFocus() end)
+        edit:SetScript("OnEditFocusLost",function(self) A.db.battle.appearance.colors[key]=(self:GetText() or ""):gsub("#",""):upper() end)
+        self.styleColorEdits[key]=edit
+    end
+
     p=self.battleCategoryPages.debug
     t=p:CreateFontString(nil,"ARTWORK","GameFontNormalLarge"); t:SetPoint("TOPLEFT",10,-5); t:SetText(self:T("SECTION_DEBUG"))
     ui.CreateCheck(p,self:T("DEBUG_ENABLE"),10,-45,function() return A.db.battle.debug.enabled end,function(v) A.db.battle.debug.enabled=v end)
@@ -840,6 +927,12 @@ function A:BuildGeneralOptions(page,ui)
 end
 
 function A:RefreshFeatureOptions()
+    if self.fontPathEdit and not self.fontPathEdit:HasFocus() then
+        self.fontPathEdit:SetText((self.db and self.db.battle and self.db.battle.appearance and self.db.battle.appearance.fontPath) or "")
+    end
+    for key,edit in pairs(self.styleColorEdits or {}) do
+        if edit and not edit:HasFocus() then edit:SetText((self.db.battle.appearance.colors and self.db.battle.appearance.colors[key]) or "") end
+    end
     if self.spellBlacklistEdit and not self.spellBlacklistEdit:HasFocus() then
         self.spellBlacklistEdit:SetText((self.db and self.db.battle and self.db.battle.filters and self.db.battle.filters.spellBlacklist) or "")
     end
