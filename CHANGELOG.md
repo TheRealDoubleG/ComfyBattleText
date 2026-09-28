@@ -1,5 +1,14 @@
 # ComfyBattleText Changelog
 
+## 0.3 Beta – 28.09.2026
+
+- Added Minimal, Standard, PvP and Everything quick presets.
+- Added a per-spell ignore list by spell name or spell ID.
+- Added an optional rolling CombatLog debug recorder for WoW Forever testing.
+- Added a copyable debug report containing addon/client/build context and recent combat events.
+- Added /cbt debug to toggle event recording.
+
+
 ## 0.2 Beta – 28.09.2026
 
 - Added a dedicated Filters category.
