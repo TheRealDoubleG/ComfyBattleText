@@ -4,7 +4,7 @@ ComfyBattleText = ComfyBattleText or {}
 local A = ComfyBattleText
 
 A.name = ADDON_NAME or "ComfyBattleText"
-A.version = "0.2"
+A.version = "0.3"
 A.buildDate = "28.09.2026"
 A.status = "Beta"
 A.gameVersion = "WoW Forever 1.60.1"
@@ -62,6 +62,12 @@ local defaults = {
             outgoingHealingMin = 0,
             hidePeriodicDamage = false,
             hidePeriodicHealing = false,
+            spellBlacklist = "",
+        },
+
+        debug = {
+            enabled = false,
+            maxEvents = 30,
         },
 
         appearance = {
@@ -136,6 +142,12 @@ SlashCmdList.COMFYBATTLETEXT = function(msg)
         end
     elseif msg == "reset" then
         if A.ResetAreaPositions then A:ResetAreaPositions() end
+    elseif msg == "debug" then
+        if A.db and A.db.battle and A.db.battle.debug then
+            A.db.battle.debug.enabled = not A.db.battle.debug.enabled
+            A:Print(A.db.battle.debug.enabled and A:T("DEBUG_ON") or A:T("DEBUG_OFF"))
+            if A.RefreshFeatureOptions then A:RefreshFeatureOptions() end
+        end
     else
         A:OpenOptions()
     end
