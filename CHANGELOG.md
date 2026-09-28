@@ -1,5 +1,13 @@
 # ComfyBattleText Changelog
 
+## 0.4 Beta – 28.09.2026
+
+- Added configurable rapid-hit merging for repeated damage/healing events.
+- Added a Style category with custom font path support.
+- Added custom RGB hex colors for incoming damage, healing, outgoing damage, misses, interrupts and dispels.
+- Added safe fallback behavior for invalid font paths and color values.
+
+
 ## 0.3 Beta – 28.09.2026
 
 - Added Minimal, Standard, PvP and Everything quick presets.
