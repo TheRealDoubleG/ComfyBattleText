@@ -171,11 +171,27 @@ function A:CreateAreaFrame(key,label)
     return f
 end
 
+function A:RegisterWithComfyHubLayout()
+    local hub=_G.ComfyHub
+    if not hub or type(hub.RegisterLayoutTarget)~="function" then return end
+    for key,frame in pairs(self.areaFrames or {}) do
+        hub:RegisterLayoutTarget("ComfyBattleText",key,frame,{
+            setEditMode=function(enabled)
+                if A.db and A.db.battle and A.db.battle.appearance then
+                    A.db.battle.appearance.unlockAreas=enabled and true or false
+                    A:RefreshAreaFrames()
+                end
+            end,
+        })
+    end
+end
+
 function A:CreateAreaFrames()
     self:CreateAreaFrame("incoming",self:T("INCOMING"))
     self:CreateAreaFrame("outgoing",self:T("OUTGOING"))
     self:CreateAreaFrame("notifications",self:T("NOTIFICATIONS"))
     self:RefreshAreaFrames()
+    self:RegisterWithComfyHubLayout()
 end
 
 function A:RefreshAreaFrames()
@@ -726,7 +742,7 @@ function A:InitializeFeature()
 
     local f=CreateFrame("Frame")
     self.eventFrame=f
-    for _,ev in ipairs({"COMBAT_LOG_EVENT_UNFILTERED","UNIT_PET","PLAYER_ENTERING_WORLD","NAME_PLATE_UNIT_ADDED","NAME_PLATE_UNIT_REMOVED"}) do
+    for _,ev in ipairs({"COMBAT_LOG_EVENT_UNFILTERED","UNIT_PET","PLAYER_ENTERING_WORLD","NAME_PLATE_UNIT_ADDED","NAME_PLATE_UNIT_REMOVED","ADDON_LOADED"}) do
         pcall(f.RegisterEvent,f,ev)
     end
 
@@ -743,6 +759,9 @@ function A:InitializeFeature()
             A:RegisterNameplate(...)
         elseif event=="NAME_PLATE_UNIT_REMOVED" then
             A:UnregisterNameplate(...)
+        elseif event=="ADDON_LOADED" then
+            local addon=...
+            if addon=="ComfyHub" then A:RegisterWithComfyHubLayout() end
         end
     end)
 
