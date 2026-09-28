@@ -4,7 +4,7 @@ ComfyBattleText = ComfyBattleText or {}
 local A = ComfyBattleText
 
 A.name = ADDON_NAME or "ComfyBattleText"
-A.version = "0.3"
+A.version = "0.4"
 A.buildDate = "28.09.2026"
 A.status = "Beta"
 A.gameVersion = "WoW Forever 1.60.1"
@@ -80,6 +80,16 @@ local defaults = {
             speed = 72,
             maxMessages = 12,
             unlockAreas = false,
+            mergeWindow = 0.15,
+            fontPath = "Fonts\\FRIZQT__.TTF",
+            colors = {
+                incomingDamage = "FF4738",
+                healing = "4DFF6B",
+                outgoingDamage = "FFD126",
+                miss = "FFC72E",
+                interrupt = "FF8C2E",
+                dispel = "59D1FF",
+            },
         },
 
         areas = {
