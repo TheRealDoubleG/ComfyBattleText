@@ -1,13 +1,13 @@
 # ComfyBattleText
 
-**Version 0.1 – Beta**  
+**Version 0.2 – Beta**  
 **Target: World of Warcraft: Forever 1.60.1 / Interface 16001**
 
 Customizable scrolling combat text for damage, healing, combat events and notifications on WoW Forever.
 
 ComfyBattleText is developed specifically for **WoW: Forever**. Retail/Modern WoW, Midnight and WoW Classic are not compatibility targets.
 
-## 0.1 Beta
+## 0.2 Beta
 
 - Separate **Incoming**, **Outgoing** and **Notifications** scroll areas.
 - Incoming damage, healing and misses/avoidance.
@@ -20,6 +20,8 @@ ComfyBattleText is developed specifically for **WoW: Forever**. Retail/Modern Wo
 - Optional combat text attached to Blizzard nameplates.
 - Unlockable and draggable scroll-area anchors.
 - Configurable font size, direction, lifetime, speed and message limits.
+- Spam filters with separate minimum values for incoming/outgoing damage and healing.
+- Optional suppression of periodic damage and periodic healing text.
 - Built-in test mode.
 - Character/account/custom profile support through the shared Comfy Suite UI.
 - Native Blizzard AddOns settings entry.
@@ -34,6 +36,6 @@ ComfyBattleText is developed specifically for **WoW: Forever**. Retail/Modern Wo
 
 ## Forever notes
 
-The first beta deliberately filters combat-log output to events involving the player or the player's current pet. Combat-log payload positions are guarded, but the exact Forever runtime behavior still needs in-game testing.
+The beta deliberately filters combat-log output to events involving the player or the player's current pet. Combat-log payload positions are guarded, but the exact Forever runtime behavior still needs in-game testing.
 
 The public feature sets of established scrolling combat text addons were useful as architecture references. ComfyBattleText uses original Comfy Suite code and Blizzard UI assets.
