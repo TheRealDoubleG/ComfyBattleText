@@ -1,5 +1,14 @@
 # ComfyBattleText Changelog
 
+## 0.2 Beta – 28.09.2026
+
+- Added a dedicated Filters category.
+- Added separate minimum-value filters for incoming/outgoing damage and healing.
+- Added optional suppression of periodic damage combat text.
+- Added optional suppression of periodic healing combat text.
+- Updated version metadata and documentation.
+
+
 ## 0.1 Beta – 28.09.2026
 
 - Initial WoW Forever foundation.
