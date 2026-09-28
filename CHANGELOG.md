@@ -1,5 +1,13 @@
 # ComfyBattleText Changelog
 
+## 0.6 Beta – 28.09.2026
+- Registered Incoming, Outgoing and Notifications anchors with ComfyHub's shared Suite edit mode.
+- Kept standalone anchor unlocking when ComfyHub is not installed.
+
+## 0.5 Beta – 28.09.2026
+- Added a searchable category list to the Battle Text settings.
+
+
 ## 0.4 Beta – 28.09.2026
 
 - Added configurable rapid-hit merging for repeated damage/healing events.
